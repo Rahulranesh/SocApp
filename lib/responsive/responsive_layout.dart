@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:instagram_clone_flutter/providers/user_provider.dart';
-import 'package:instagram_clone_flutter/utils/global_variable.dart';
+import 'package:instagram/models/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class ResponsiveLayout extends StatefulWidget {
@@ -24,15 +23,15 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
   }
 
   addData() async {
-    UserProvider userProvider =
+    UserProvider _userProvider =
         Provider.of<UserProvider>(context, listen: false);
-    await userProvider.refreshUser();
+    await _userProvider.refreshUser();
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth > webScreenSize) {
+      if (constraints.maxWidth > 500) {
         // 600 can be changed to 900 if you want to display tablet screen with mobile screen layout
         return widget.webScreenLayout;
       }
