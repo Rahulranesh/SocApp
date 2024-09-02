@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 class ResponsiveLayout extends StatefulWidget {
   final Widget mobileScreenLayout;
   final Widget webScreenLayout;
+
   const ResponsiveLayout({
     Key? key,
     required this.mobileScreenLayout,
@@ -22,7 +23,7 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     addData();
   }
 
-  addData() async {
+  void addData() async {
     UserProvider _userProvider =
         Provider.of<UserProvider>(context, listen: false);
     await _userProvider.refreshUser();
@@ -30,12 +31,14 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth > 500) {
-        // 600 can be changed to 900 if you want to display tablet screen with mobile screen layout
-        return widget.webScreenLayout;
-      }
-      return widget.mobileScreenLayout;
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 600) {
+          return widget
+              .webScreenLayout; // Use web layout if screen width is greater than 600
+        }
+        return widget.mobileScreenLayout; // Otherwise, use mobile layout
+      },
+    );
   }
 }

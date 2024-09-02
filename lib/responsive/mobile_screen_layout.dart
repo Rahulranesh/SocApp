@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram/utils/colors.dart';
+import 'package:instagram/utils/global_variables.dart'; // Import the global variables
 
 class MobileScreenLayout extends StatefulWidget {
   const MobileScreenLayout({Key? key}) : super(key: key);
@@ -32,7 +33,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   }
 
   void navigationTapped(int page) {
-    //Animating Page
+    // Animating Page
     pageController.jumpToPage(page);
   }
 
@@ -42,6 +43,10 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       body: PageView(
         controller: pageController,
         onPageChanged: onPageChanged,
+        children:
+            homeScreenItems, // Reference to the global homeScreenItems list
+        physics:
+            const NeverScrollableScrollPhysics(), // Disable swipe navigation
       ),
       bottomNavigationBar: CupertinoTabBar(
         backgroundColor: mobileBackgroundColor,
@@ -52,29 +57,27 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               color: (_page == 0) ? primaryColor : secondaryColor,
             ),
             label: '',
-            backgroundColor: primaryColor,
           ),
           BottomNavigationBarItem(
-              icon: Icon(
-                Icons.search,
-                color: (_page == 1) ? primaryColor : secondaryColor,
-              ),
-              label: '',
-              backgroundColor: primaryColor),
+            icon: Icon(
+              Icons.search,
+              color: (_page == 1) ? primaryColor : secondaryColor,
+            ),
+            label: '',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(
-                Icons.add_circle,
-                color: (_page == 2) ? primaryColor : secondaryColor,
-              ),
-              label: '',
-              backgroundColor: primaryColor),
+            icon: Icon(
+              Icons.add_circle,
+              color: (_page == 2) ? primaryColor : secondaryColor,
+            ),
+            label: '',
+          ),
           BottomNavigationBarItem(
             icon: Icon(
               Icons.favorite,
               color: (_page == 3) ? primaryColor : secondaryColor,
             ),
             label: '',
-            backgroundColor: primaryColor,
           ),
           BottomNavigationBarItem(
             icon: Icon(
@@ -82,7 +85,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               color: (_page == 4) ? primaryColor : secondaryColor,
             ),
             label: '',
-            backgroundColor: primaryColor,
           ),
         ],
         onTap: navigationTapped,
