@@ -115,7 +115,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.getUser!;
+    final user = userProvider.getUser;
+
+    // Handle case where user is null
+    if (user == null) {
+      return Center(
+        child: CircularProgressIndicator(), // or any other placeholder
+      );
+    }
 
     return _file == null
         ? Center(
