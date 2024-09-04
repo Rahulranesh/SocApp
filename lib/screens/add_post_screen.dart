@@ -115,13 +115,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.getUser;
-
-    if (user == null) {
-      return Center(
-        child: Text("Error: User not found. Please log in again."),
-      );
-    }
+    final user = userProvider.getUser!;
 
     return _file == null
         ? Center(
@@ -136,11 +130,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
               centerTitle: false,
               actions: [
                 TextButton(
-                  onPressed: () => postImage(
-                    user.uid,
-                    user.username,
-                    user.photoUrl,
-                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () => postImage(
+                            user.uid,
+                            user.username,
+                            user.photoUrl,
+                          ),
                   child: const Text(
                     "Post",
                     style: TextStyle(
@@ -154,7 +150,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
             ),
             body: Column(
               children: [
-                if (isLoading) const LinearProgressIndicator(),
+                if (isLoading) LinearProgressIndicator(),
                 const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -181,11 +177,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
                         aspectRatio: 487 / 451,
                         child: Container(
                           decoration: BoxDecoration(
-                            image: DecorationImage(
-                              fit: BoxFit.fill,
-                              alignment: FractionalOffset.topCenter,
-                              image: MemoryImage(_file!),
-                            ),
+                            image: _file != null
+                                ? DecorationImage(
+                                    fit: BoxFit.fill,
+                                    alignment: FractionalOffset.topCenter,
+                                    image: MemoryImage(_file!),
+                                  )
+                                : null,
                           ),
                         ),
                       ),
