@@ -19,10 +19,10 @@ class _ProfilescreenState extends State<Profilescreen> {
   int followers = 0;
   int following = 0;
   bool isfollowing = false;
+  bool isLoading = true;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getData();
   }
@@ -33,98 +33,108 @@ class _ProfilescreenState extends State<Profilescreen> {
           .collection('users')
           .doc(widget.uid)
           .get();
-      //get post length
+
       var postSnap = await FirebaseFirestore.instance
           .collection('posts')
           .where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
           .get();
-      postlen = postSnap.docs.length;
-      userData = userSnap.data()!;
-      followers = userSnap.data()!['followers'].length;
-      following = userSnap.data()!['following'].length;
-      isfollowing = userSnap
-          .data()!['followers ']
-          .contains(FirebaseAuth.instance.currentUser!.uid);
-      setState(() {});
+
+      setState(() {
+        postlen = postSnap.docs.length;
+        userData = userSnap.data() ?? {};
+        followers = userData['followers']?.length ?? 0;
+        following = userData['following']?.length ?? 0;
+        isfollowing = userData['followers']
+                ?.contains(FirebaseAuth.instance.currentUser!.uid) ??
+            false;
+        isLoading = false;
+      });
     } catch (e) {
       showSnackBar(e.toString(), context);
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: mobileBackgroundColor,
-        title: Text(userData['username']),
-        centerTitle: false,
-      ),
-      body: ListView(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
+    return isLoading
+        ? Center(child: CircularProgressIndicator())
+        : Scaffold(
+            appBar: AppBar(
+              backgroundColor: mobileBackgroundColor,
+              title: Text(userData['username'] ?? 'User'),
+              centerTitle: false,
+            ),
+            body: ListView(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.grey,
-                      backgroundImage: NetworkImage(
-                        userData['photoUrl'],
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.grey,
+                            backgroundImage: userData['photoUrl'] != null
+                                ? NetworkImage(userData['photoUrl'])
+                                : null,
+                            radius: 40,
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: Column(children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  buildStatColumn(postlen, "posts"),
+                                  buildStatColumn(followers, "followers"),
+                                  buildStatColumn(following, "following")
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  FollowButton(
+                                    backgroundColor: mobileBackgroundColor,
+                                    borderColor: Colors.grey,
+                                    text: 'Edit profile',
+                                    textColor: primaryColor,
+                                    function: () {},
+                                  )
+                                ],
+                              )
+                            ]),
+                          ),
+                        ],
                       ),
-                      radius: 40,
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Column(children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            buildStatColumn(postlen, "posts"),
-                            buildStatColumn(followers, "followers"),
-                            buildStatColumn(following, "following")
-                          ],
+                      Container(
+                        alignment: Alignment.centerLeft,
+                        padding: EdgeInsets.only(top: 15),
+                        child: Text(
+                          userData['username'] ?? '',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            FollowButton(
-                              backgroundColor: mobileBackgroundColor,
-                              borderColor: Colors.grey,
-                              text: 'Edit profile',
-                              textColor: primaryColor,
-                              function: () {},
-                            )
-                          ],
-                        )
-                      ]),
-                    ),
-                  ],
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(top: 15),
-                  child: Text(
-                    userData['username'],
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                      ),
+                      Container(
+                        alignment: Alignment.centerLeft,
+                        padding: EdgeInsets.only(top: 1),
+                        child: Text(
+                          userData['bio'] ?? '',
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Container(
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(top: 1),
-                  child: Text(
-                    userData['bio    '],
-                  ),
-                ),
+                )
               ],
             ),
-          )
-        ],
-      ),
-    );
+          );
   }
 
   Column buildStatColumn(int num, String label) {
