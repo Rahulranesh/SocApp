@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram/resources/authmethods.dart';
+import 'package:instagram/resources/firestore_methods.dart';
+import 'package:instagram/screens/login_screen.dart';
 import 'package:instagram/utils/colors.dart';
 import 'package:instagram/utils/utils.dart';
 import 'package:instagram/widgets/follow_button.dart';
@@ -19,7 +22,7 @@ class _ProfilescreenState extends State<Profilescreen> {
   int followers = 0;
   int following = 0;
   bool isfollowing = false;
-  bool isLoading = true;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -28,15 +31,20 @@ class _ProfilescreenState extends State<Profilescreen> {
   }
 
   getData() async {
+    setState(() {
+      isLoading = true;
+    });
     try {
+      // Fetch user data
       var userSnap = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.uid)
           .get();
 
+      // Fetch posts of the user whose profile is being viewed
       var postSnap = await FirebaseFirestore.instance
           .collection('posts')
-          .where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+          .where('uid', isEqualTo: widget.uid) // Corrected to use widget.uid
           .get();
 
       setState(() {
@@ -99,13 +107,61 @@ class _ProfilescreenState extends State<Profilescreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  FollowButton(
-                                    backgroundColor: mobileBackgroundColor,
-                                    borderColor: Colors.grey,
-                                    text: 'Edit profile',
-                                    textColor: primaryColor,
-                                    function: () {},
-                                  )
+                                  FirebaseAuth.instance.currentUser!.uid ==
+                                          widget.uid
+                                      ? FollowButton(
+                                          backgroundColor:
+                                              mobileBackgroundColor,
+                                          borderColor: Colors.grey,
+                                          text: 'Sign out',
+                                          textColor: primaryColor,
+                                          function: () async {
+                                            await AuthMethods().signOut();
+                                            Navigator.of(context)
+                                                .pushReplacement(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    LoginScreen(),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : isfollowing
+                                          ? FollowButton(
+                                              backgroundColor: Colors.white,
+                                              borderColor: Colors.black,
+                                              text: 'Unfollow',
+                                              textColor: Colors.grey,
+                                              function: () async {
+                                                await FireStoreMethods()
+                                                    .followUser(
+                                                        FirebaseAuth.instance
+                                                            .currentUser!.uid,
+                                                        userData['uid']);
+                                                setState(() {
+                                                  isfollowing = false;
+                                                  followers--;
+                                                });
+                                              },
+                                            )
+                                          : FollowButton(
+                                              backgroundColor: Colors.blue,
+                                              borderColor: Colors.white,
+                                              text: 'Follow',
+                                              textColor: Colors.blue,
+                                              function: () async {
+                                                await FireStoreMethods()
+                                                    .followUser(
+                                                        FirebaseAuth.instance
+                                                            .currentUser!.uid,
+                                                        userData['uid']);
+
+                                                setState(() {
+                                                  isfollowing = true;
+                                                  followers++;
+                                                });
+                                              },
+                                            ),
                                 ],
                               )
                             ]),
@@ -131,6 +187,46 @@ class _ProfilescreenState extends State<Profilescreen> {
                       ),
                     ],
                   ),
+                ),
+                Divider(),
+                FutureBuilder(
+                  future: FirebaseFirestore.instance
+                      .collection('posts')
+                      .where('uid', isEqualTo: widget.uid)
+                      .get(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data == null) {
+                      return Center(
+                        child: Text('No posts yet'),
+                      );
+                    }
+                    return GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 5,
+                          mainAxisSpacing: 1.5,
+                          childAspectRatio: 1),
+                      itemBuilder: (context, index) {
+                        DocumentSnapshot snap =
+                            (snapshot.data! as QuerySnapshot).docs[index];
+                        return Container(
+                          child: Image(
+                            image: NetworkImage(
+                              snap['postUrl'],
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      },
+                      shrinkWrap: true,
+                      itemCount: (snapshot.data! as QuerySnapshot).docs.length,
+                    );
+                  },
                 )
               ],
             ),
@@ -154,9 +250,12 @@ class _ProfilescreenState extends State<Profilescreen> {
           child: Text(
             label,
             style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w400, color: Colors.grey),
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: Colors.grey,
+            ),
           ),
-        )
+        ),
       ],
     );
   }
