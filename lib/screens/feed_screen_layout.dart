@@ -18,10 +18,12 @@ class FeedScreenLayout extends StatelessWidget {
                 backgroundColor: width > webScreenSize
                     ? webBackgroundColor
                     : mobileBackgroundColor,
-                title: SvgPicture.asset(
-                  'assets/ic_instagram.svg',
-                  color: Colors.white,
-                  height: 32,
+                title: Text(
+                  "GRAMHUB",
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontStyle: FontStyle.normal,
+                      fontWeight: FontWeight.bold),
                 ),
                 actions: [
                   IconButton(

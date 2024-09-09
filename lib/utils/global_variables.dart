@@ -13,7 +13,7 @@ final homeScreenItems = [
   FeedScreenLayout(), // Feed screen placeholder
   Searchscreen(), // Search screen placeholder
   AddPostScreen(), // Add Post screen
-  Text('notif'), // Notifications screen placeholder
+  // Notifications screen placeholder
   Profilescreen(
     uid: FirebaseAuth.instance.currentUser!.uid,
   ), // Profile screen placeholder

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram/models/user.dart';
@@ -22,11 +23,14 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   bool isLikeAnimating = false;
+  bool isBookmarked = false;
   int commentLen = 0;
+
   @override
   void initState() {
     super.initState();
     getComments();
+    checkBookmarkStatus();
   }
 
   void getComments() async {
@@ -43,20 +47,51 @@ class _PostCardState extends State<PostCard> {
     setState(() {});
   }
 
+  void checkBookmarkStatus() async {
+    final User? user =
+        Provider.of<UserProvider>(context, listen: false).getUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      List bookmarks = userDoc.get('bookmarks') ?? [];
+      setState(() {
+        isBookmarked = bookmarks.contains(widget.snap['postId']);
+      });
+    }
+  }
+
+  void toggleBookmark() async {
+    final User? user =
+        Provider.of<UserProvider>(context, listen: false).getUser;
+    if (user != null) {
+      // Ensure the bookmarks field is a list, default to an empty list if null
+      List<dynamic> bookmarks = widget.snap['bookmarks'] ?? [];
+      await FireStoreMethods()
+          .bookmarkPost(widget.snap['postId'], user.uid, bookmarks);
+      setState(() {
+        isBookmarked = !isBookmarked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final User? user = Provider.of<UserProvider>(context).getUser;
     final width = MediaQuery.of(context).size.width;
+
     return Container(
       decoration: BoxDecoration(
-          border: Border.all(
-              color: width > webScreenSize
-                  ? secondaryColor
-                  : mobileBackgroundColor)),
-      color: mobileBackgroundColor,
+        color: mobileBackgroundColor,
+        border: Border.all(
+          color: width > webScreenSize ? secondaryColor : mobileBackgroundColor,
+        ),
+      ),
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         children: [
+          // Header Section
           Container(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16)
                 .copyWith(right: 0),
@@ -97,7 +132,7 @@ class _PostCardState extends State<PostCard> {
                               .map(
                                 (e) => InkWell(
                                   onTap: () async {
-                                    FireStoreMethods()
+                                    await FireStoreMethods()
                                         .deletePost(widget.snap['postId']);
                                     Navigator.of(context).pop();
                                   },
@@ -120,43 +155,45 @@ class _PostCardState extends State<PostCard> {
           ),
 
           // Image Section
-
           GestureDetector(
             onDoubleTap: () async {
-              await FireStoreMethods().likePost(
+              bool isNewLike = await FireStoreMethods().likePost(
                   widget.snap['postId'], user!.uid, widget.snap['likes']);
               setState(() {
-                isLikeAnimating = true;
+                isLikeAnimating = isNewLike;
               });
             },
-            child: Stack(alignment: Alignment.center, children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.35,
-                width: double.infinity,
-                child: Image.network(
-                  widget.snap['postUrl'] ?? 'https://via.placeholder.com/500',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              AnimatedOpacity(
-                duration: Duration(milliseconds: 200),
-                opacity: isLikeAnimating ? 1 : 0,
-                child: LikeAnimation(
-                  child: Icon(
-                    Icons.favorite,
-                    color: Colors.white,
-                    size: 120,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.35,
+                  width: double.infinity,
+                  child: Image.network(
+                    widget.snap['postUrl'] ?? 'https://via.placeholder.com/500',
+                    fit: BoxFit.cover,
                   ),
-                  isAnimating: isLikeAnimating,
-                  duration: Duration(milliseconds: 400),
-                  onEnd: () {
-                    setState(() {
-                      isLikeAnimating = false;
-                    });
-                  },
                 ),
-              )
-            ]),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isLikeAnimating ? 1 : 0,
+                  child: LikeAnimation(
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.white,
+                      size: 120,
+                    ),
+                    isAnimating: isLikeAnimating,
+                    duration: const Duration(milliseconds: 400),
+                    onEnd: () {
+                      setState(() {
+                        isLikeAnimating = false;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Like and Comment Section
@@ -166,23 +203,27 @@ class _PostCardState extends State<PostCard> {
                 isAnimating: widget.snap['likes'].contains(user?.uid),
                 smallLike: true,
                 child: IconButton(
-                    onPressed: () async {
-                      await FireStoreMethods().likePost(widget.snap['postId'],
-                          user!.uid, widget.snap['likes']);
-                      setState(() {
-                        isLikeAnimating = true;
-                      });
-                    },
-                    icon: widget.snap['likes'].contains(user?.uid)
-                        ? const Icon(
-                            Icons.favorite,
-                            color: Colors.red,
-                          )
-                        : Icon(Icons.favorite_border)),
+                  onPressed: () async {
+                    bool isNewLike = await FireStoreMethods().likePost(
+                        widget.snap['postId'], user!.uid, widget.snap['likes']);
+                    setState(() {
+                      isLikeAnimating = isNewLike;
+                    });
+                  },
+                  icon: widget.snap['likes'].contains(user?.uid)
+                      ? const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                        )
+                      : const Icon(Icons.favorite_border),
+                ),
               ),
               IconButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => commentscreen(snap: widget.snap))),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => CommentsScreen(snap: widget.snap),
+                  ),
+                ),
                 icon: const Icon(Icons.comment_outlined),
               ),
               IconButton(
@@ -193,8 +234,11 @@ class _PostCardState extends State<PostCard> {
                 child: Align(
                   alignment: Alignment.bottomRight,
                   child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.bookmark_border),
+                    onPressed: toggleBookmark,
+                    icon: Icon(
+                      isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                      color: isBookmarked ? Colors.white : null,
+                    ),
                   ),
                 ),
               ),
@@ -254,7 +298,10 @@ class _PostCardState extends State<PostCard> {
                       (widget.snap['datepublished'] as Timestamp?)?.toDate() ??
                           DateTime.now(),
                     ),
-                    style: const TextStyle(fontSize: 16, color: secondaryColor),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: secondaryColor,
+                    ),
                   ),
                 ),
               ],

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:instagram/screens/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:instagram/models/user_provider.dart';
 import 'package:instagram/responsive/mobile_screen_layout.dart';
@@ -44,7 +45,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark()
           .copyWith(scaffoldBackgroundColor: mobileBackgroundColor),
       debugShowCheckedModeBanner: false,
-      home: const LoginScreen(),
+      home: SplashScreen(),
     );
   }
 }
